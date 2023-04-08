@@ -15,21 +15,16 @@
 .text                     						# switch back to the text section
 
 # Start of main function
-# prologue
+# Prologue
 
 .globl	main              						# make the main function visible to the linker
 .type	main, @function    						# declare main as a function
 main:                     						# main function label
 .LFB6:                    						# label for start of function
-	.cfi_startproc         						# specify start of procedure in the debug info
-	endbr64                						# enable end branch speculation on indirect jumps
 	pushq	%rbp             					# push rbp onto stack
-	.cfi_def_cfa_offset 16 						# establish stack frame
-	.cfi_offset 6, -16     						# save rbp to previous location on stack
 	movq	%rsp, %rbp       					# move the stack pointer to rbp
 
 # function 
-	.cfi_def_cfa_register 6 					# update the current frame address register
 	subq	$32, %rsp        					# allocate 32 bytes of space on the stack for local variables
 	movq	%fs:40, %rax     					# read the address of the current thread's stack guard
 	movq	%rax, -8(%rbp)   					# store the stack guard value on the stack
@@ -50,6 +45,7 @@ main:                     						# main function label
 	idivl	-16(%rbp)        					# divide the random number by the range of possible values
 	movl	-20(%rbp), %eax  					# load the minimum value into eax
 	addl %edx, %eax       						# Add the quotient of the division to %eax
+
 movl %eax, -12(%rbp)  							# Move the result to the memory location at -12(%rbp)
 leaq .LC0(%rip), %rax 							# Load the address of the string .LC0 into %rax
 movq %rax, %rdi       							# Move the value in %rax to %rdi (for use in printf)
@@ -69,6 +65,7 @@ movq %rax, %rdi       							# Move the value in %rax to %rdi (for use in printf
 movl $0, %eax         							# Move the value 0 to %eax (for use in printf)
 call printf@PLT      							# Call the printf function to print the string in %rdi
 jmp .L3               							# Jump to .L3
+
 .L2:
 	leaq	.LC3(%rip), %rax   					# load address of the format string for printf into %rax
 	movq	%rax, %rdi        				 	# move the format string address to the first argument register %rdi
@@ -80,40 +77,11 @@ jmp .L3               							# Jump to .L3
 .L3:
 	movl	$0, %eax           					# move 0 to %eax register (return value)
 	movq	-8(%rbp), %rdx     					# move the old base pointer value to %rdx
-	subq	%fs:40, %rdx       					# subtract the value of %fs:40 from %rdx to check if the stack has been corrupted
-	je	.L5                 					# jump to label .L5 if the stack is not corrupted
-	call	__stack_chk_fail@PLT 				# call __stack_chk_fail if the stack has been corrupted
+	je	.L5                 					# jump to label .L5
 .L5:
 	leave                    					# deallocate the stack frame
-	.cfi_def_cfa 7, 8
 	ret                     					# return from the function
-	.cfi_endproc
 
-# Metadata and debugging information
-# This part is not necessary to make the program run
-
-/*
-.LFE6:
-	.size	main, .-main      					# End of function 'main', set its size
-	.ident	"GCC: (Ubuntu 11.3.0-1ubuntu1~22.04) 11.3.0" 		# Compiler version information
-	.section	.note.GNU-stack,"",@progbits 					# Marks the stack as non-executable
-	.section	.note.gnu.property,"a" 							# Marks the binary as containing GNU properties
-	.align 8 													# Aligns the next instruction on an 8-byte boundary
-	.long	1f - 0f 											# Length of .note.gnu.build-id section
-	.long	4f - 1f 											# Length of .note.gnu.property section
-	.long	5 													# Value of the note type
-0:
-	.string	"GNU" 												# Note section name
-1:
-	.align 8 													# Aligns the next instruction on an 8-byte boundary
-	.long	0xc0000002 											# Property type (Tag_GNU_property_stack_size)
-	.long	3f - 2f 											# Length of property value
-2:
-	.long	0x3 												# Property value (0x300, or 768 bytes)
-3:
-	.align 8 													# Aligns the next instruction on an 8-byte boundary
-4: 																# End of the .note.gnu.property section
-*/
 
 # Run with this command in ubuntu
 # gcc -o program assembly.s && ./program
