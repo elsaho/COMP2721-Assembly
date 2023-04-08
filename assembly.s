@@ -1,3 +1,5 @@
+# Read-only data section
+
 .file	"assembly.s"      						# indicates the source file being assembled
 .text                     						# switch to the text section where code is stored
 .section	.rodata        						# start a new section for read-only data
@@ -11,6 +13,10 @@
 .LC3:                     						# define a label for this string
 	.string	"You lose!"                    		# string to print if user guesses incorrectly
 .text                     						# switch back to the text section
+
+# Start of main function
+# prologue
+
 .globl	main              						# make the main function visible to the linker
 .type	main, @function    						# declare main as a function
 main:                     						# main function label
@@ -21,6 +27,8 @@ main:                     						# main function label
 	.cfi_def_cfa_offset 16 						# establish stack frame
 	.cfi_offset 6, -16     						# save rbp to previous location on stack
 	movq	%rsp, %rbp       					# move the stack pointer to rbp
+
+# function 
 	.cfi_def_cfa_register 6 					# update the current frame address register
 	subq	$32, %rsp        					# allocate 32 bytes of space on the stack for local variables
 	movq	%fs:40, %rax     					# read the address of the current thread's stack guard
@@ -67,6 +75,8 @@ jmp .L3               							# Jump to .L3
 	movl	$0, %eax           					# move 0 into %eax register for the second argument (no arguments needed for the format string)
 	call	printf@PLT       					# call printf function with the format string
 	jmp	.L3                						# jump to label .L3
+
+# Epilogue
 .L3:
 	movl	$0, %eax           					# move 0 to %eax register (return value)
 	movq	-8(%rbp), %rdx     					# move the old base pointer value to %rdx
@@ -78,6 +88,11 @@ jmp .L3               							# Jump to .L3
 	.cfi_def_cfa 7, 8
 	ret                     					# return from the function
 	.cfi_endproc
+
+# Metadata and debugging information
+# This part is not necessary to make the program run
+
+/*
 .LFE6:
 	.size	main, .-main      					# End of function 'main', set its size
 	.ident	"GCC: (Ubuntu 11.3.0-1ubuntu1~22.04) 11.3.0" 		# Compiler version information
@@ -98,3 +113,7 @@ jmp .L3               							# Jump to .L3
 3:
 	.align 8 													# Aligns the next instruction on an 8-byte boundary
 4: 																# End of the .note.gnu.property section
+*/
+
+# Run with this command in ubuntu
+# gcc -o program assembly.s && ./program
